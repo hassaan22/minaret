@@ -11,6 +11,8 @@
 
 </div>
 
+<img width="458" height="790" center alt="{BCBBC977-131C-495E-B4D1-128B76CA6015}" src="https://github.com/user-attachments/assets/e0bd9b30-fe71-45dd-bc9c-2965af4c95f3" />
+
 ---
 
 Minaret fetches daily prayer times, schedules azan audio playback to your smart speakers or Android phone, and provides a beautiful Lovelace dashboard card with live countdown, Hijri date, and playback controls.
