@@ -13,7 +13,7 @@
 
 ---
 
-Minaret fetches daily prayer times, schedules azan audio playback to your Android phone via the HA Companion App, and provides a beautiful Lovelace dashboard card with live countdown, Hijri date, and playback controls.
+Minaret fetches daily prayer times, schedules azan audio playback to your smart speakers or Android phone, and provides a beautiful Lovelace dashboard card with live countdown, Hijri date, and playback controls.
 
 ## Features
 
@@ -21,8 +21,9 @@ Minaret fetches daily prayer times, schedules azan audio playback to your Androi
 - **Two prayer time sources** - Qatar MOI portal or AlAdhan API (supports 15+ calculation methods worldwide)
 - **YouTube audio support** - Provide a YouTube URL and Minaret downloads & caches the audio as MP3 via yt-dlp
 - **Separate Fajr audio** - Optionally use a different azan recording for the Fajr prayer
+- **Smart speaker support** - Play azan on Google Home, Alexa, Sonos, HomePod, or any media_player entity
 - **Android playback via VLC** - Wakes the screen and plays audio through VLC with `command_screen_on` + `command_activity`
-- **Stop control** - Stop playback remotely via `command_media` targeting VLC
+- **Stop control** - Stop playback remotely via dashboard or service call
 - **Per-prayer toggles** - Enable/disable individual prayers (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha)
 - **Live countdown** - Client-side 1-second countdown timer to the next prayer
 - **Hijri date** - Displays the current Islamic calendar date
@@ -33,9 +34,14 @@ Minaret fetches daily prayer times, schedules azan audio playback to your Androi
 
 - **Home Assistant** 2024.1.0 or newer
 - **HACS** (for easy installation) or manual install
-- **HA Companion App** on your Android phone
-- **VLC for Android** installed on your phone (used for audio playback)
 - **ffmpeg** installed in your HA environment (for yt-dlp audio conversion)
+
+For **Android playback**:
+- **HA Companion App** on your Android phone
+- **VLC for Android** installed on your phone
+
+For **Smart Speaker playback**:
+- Any media_player entity (Google Home, Alexa, Sonos, etc.)
 
 ## Installation
 
@@ -62,11 +68,14 @@ Go to **Settings > Devices & Services > Add Integration** and search for **Minar
 The setup wizard will guide you through:
 
 | Step | What you configure |
-|------|--------------------|
+|------|---------------------|
 | **Audio** | YouTube URL (or direct MP3 link) for the azan audio. Optional separate URL for Fajr. |
+| **Playback Device** | Choose between Smart Speaker/Media Player or Android Phone (VLC). |
+| **Media Player** | (If smart speaker) Select your speaker from the entity picker. |
+| **Android Settings** | (If Android) External URL and notify service name. |
 | **Prayer Source** | Qatar MOI (scrapes portal.moi.gov.qa) or AlAdhan API (global, 15+ methods). |
 | **Location** | City, country, and calculation method (only if using AlAdhan). |
-| **Schedule** | External URL (how your phone reaches HA), notify service name, offset minutes, and per-prayer toggles. |
+| **Schedule** | Offset minutes and per-prayer toggles. |
 
 ### 2. Add the Lovelace Card
 
@@ -83,7 +92,18 @@ type: custom:azan-prayer-card
 
 No configuration needed - the card auto-discovers all Minaret entities.
 
-### 3. Set Up Your Phone
+### 3a. Set Up Smart Speaker (Recommended)
+
+If you chose the **Smart Speaker / Media Player** option during setup:
+
+1. Ensure your speaker is set up in Home Assistant as a media_player entity
+2. That's it! Minaret will use `media_player.play_media` to play the azan
+
+**Supported speakers**: Google Home, Google Nest, Amazon Echo/Alexa, Sonos, Apple HomePod, Chromecast, and any device that supports the HA media_player integration.
+
+### 3b. Set Up Android Phone
+
+If you chose the **Android Phone (VLC)** option during setup:
 
 1. Install **VLC for Android** from the Play Store
 2. Set VLC as the default app for audio files
@@ -120,13 +140,20 @@ No configuration needed - the card auto-discovers all Minaret entities.
 1. On startup, Minaret fetches today's prayer times from your configured source
 2. It downloads the azan audio from YouTube (or uses cached MP3) via yt-dlp
 3. For each enabled prayer, it schedules an exact-time callback using `async_track_point_in_time`
-4. When a prayer time arrives, it sends `command_screen_on` followed by `command_activity` to launch VLC with the audio URL
+4. When a prayer time arrives:
+   - **Smart Speaker**: Uses `media_player.play_media` to stream the audio
+   - **Android**: Sends `command_screen_on` followed by `command_activity` to launch VLC
 5. Prayer times refresh every 6 hours and at midnight
 6. The Lovelace card reads entity states and provides a live client-side countdown
 
 ## Troubleshooting
 
-**Audio doesn't play:**
+**Audio doesn't play (Smart Speaker):**
+- Ensure the speaker is powered on and connected to your network
+- Test manually: Developer Tools > Services > `media_player.play_media` with a test URL
+- Check that the HA internal URL is accessible from your speaker's network
+
+**Audio doesn't play (Android):**
 - Ensure VLC is installed and set as default audio player
 - Check that the external URL is reachable from your phone
 - Verify the notify service name matches your phone (check **Settings > Companion App > Notifications**)

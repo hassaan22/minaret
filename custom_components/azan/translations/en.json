@@ -13,6 +13,32 @@
           "fajr_azan_url": "Optional separate audio URL for the Fajr prayer"
         }
       },
+      "playback_mode": {
+        "title": "Playback Device",
+        "description": "Choose how you want to play the azan audio.",
+        "data": {
+          "playback_mode": "Playback Mode"
+        }
+      },
+      "media_player": {
+        "title": "Media Player",
+        "description": "Select the smart speaker or media player to use for azan playback.",
+        "data": {
+          "media_player": "Media Player"
+        }
+      },
+      "android_vlc": {
+        "title": "Android Settings",
+        "description": "Configure the Android phone settings for VLC playback.",
+        "data": {
+          "external_url": "External URL",
+          "notify_service": "Notify Service Name"
+        },
+        "data_description": {
+          "external_url": "The external URL your phone can reach HA at (e.g., https://your-ha.duckdns.org)",
+          "notify_service": "Home Assistant notify service name (e.g., mobile_app_your_phone)"
+        }
+      },
       "prayer_source": {
         "title": "Prayer Times Source",
         "description": "Choose where to fetch prayer times from.",
@@ -30,11 +56,9 @@
         }
       },
       "schedule": {
-        "title": "Schedule & Notifications",
-        "description": "Configure playback schedule and notification settings.",
+        "title": "Schedule & Prayers",
+        "description": "Configure the offset and which prayers to play azan for.",
         "data": {
-          "external_url": "External URL",
-          "notify_service": "Notify Service Name",
           "offset_minutes": "Offset (minutes before prayer)",
           "prayer_fajr": "Fajr",
           "prayer_sunrise": "Sunrise",
@@ -44,8 +68,6 @@
           "prayer_isha": "Isha"
         },
         "data_description": {
-          "external_url": "The external URL your phone can reach HA at (e.g., https://your-ha.duckdns.org)",
-          "notify_service": "Home Assistant notify service name (e.g., mobile_app_your_phone)",
           "offset_minutes": "Play the azan this many minutes before the actual prayer time"
         }
       }
@@ -64,6 +86,28 @@
           "fajr_azan_url": "Fajr Audio URL (optional)"
         }
       },
+      "playback_mode": {
+        "title": "Playback Device",
+        "description": "Choose how you want to play the azan audio.",
+        "data": {
+          "playback_mode": "Playback Mode"
+        }
+      },
+      "media_player": {
+        "title": "Media Player",
+        "description": "Select the smart speaker or media player to use for azan playback.",
+        "data": {
+          "media_player": "Media Player"
+        }
+      },
+      "android_vlc": {
+        "title": "Android Settings",
+        "description": "Configure the Android phone settings for VLC playback.",
+        "data": {
+          "external_url": "External URL",
+          "notify_service": "Notify Service Name"
+        }
+      },
       "prayer_source": {
         "title": "Prayer Times Source",
         "data": {
@@ -79,10 +123,8 @@
         }
       },
       "schedule": {
-        "title": "Schedule & Notifications",
+        "title": "Schedule & Prayers",
         "data": {
-          "external_url": "External URL",
-          "notify_service": "Notify Service Name",
           "offset_minutes": "Offset (minutes before prayer)",
           "prayer_fajr": "Fajr",
           "prayer_sunrise": "Sunrise",

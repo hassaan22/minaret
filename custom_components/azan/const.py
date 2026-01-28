@@ -12,6 +12,12 @@ CONF_COUNTRY = "country"
 CONF_METHOD = "method"
 CONF_OFFSET_MINUTES = "offset_minutes"
 CONF_EXTERNAL_URL = "external_url"
+CONF_PLAYBACK_MODE = "playback_mode"
+CONF_MEDIA_PLAYER = "media_player"
+
+# Playback modes
+PLAYBACK_ANDROID_VLC = "android_vlc"
+PLAYBACK_MEDIA_PLAYER = "media_player"
 
 # Prayer toggle config keys
 CONF_PRAYER_FAJR = "prayer_fajr"

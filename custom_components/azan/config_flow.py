@@ -7,6 +7,8 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 
+from homeassistant.helpers import selector
+
 from .const import (
     CALC_METHODS,
     CONF_AZAN_URL,
@@ -14,9 +16,11 @@ from .const import (
     CONF_COUNTRY,
     CONF_EXTERNAL_URL,
     CONF_FAJR_URL,
+    CONF_MEDIA_PLAYER,
     CONF_METHOD,
     CONF_NOTIFY_SERVICE,
     CONF_OFFSET_MINUTES,
+    CONF_PLAYBACK_MODE,
     CONF_PRAYER_ASR,
     CONF_PRAYER_DHUHR,
     CONF_PRAYER_FAJR,
@@ -28,6 +32,8 @@ from .const import (
     DEFAULT_OFFSET_MINUTES,
     DEFAULT_SOURCE,
     DOMAIN,
+    PLAYBACK_ANDROID_VLC,
+    PLAYBACK_MEDIA_PLAYER,
     SOURCE_ALADHAN,
     SOURCE_QATAR_MOI,
 )
@@ -48,7 +54,7 @@ class AzanConfigFlow(ConfigFlow, domain=DOMAIN):
         """Step 1: Audio settings."""
         if user_input is not None:
             self._data.update(user_input)
-            return await self.async_step_prayer_source()
+            return await self.async_step_playback_mode()
 
         return self.async_show_form(
             step_id="user",
@@ -62,6 +68,69 @@ class AzanConfigFlow(ConfigFlow, domain=DOMAIN):
                 "azan_url_desc": "YouTube or direct URL for the azan audio",
                 "fajr_url_desc": "Optional separate audio for Fajr prayer",
             },
+        )
+
+    async def async_step_playback_mode(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Step 2: Playback mode selection."""
+        if user_input is not None:
+            self._data.update(user_input)
+            if user_input[CONF_PLAYBACK_MODE] == PLAYBACK_MEDIA_PLAYER:
+                return await self.async_step_media_player()
+            return await self.async_step_android_vlc()
+
+        return self.async_show_form(
+            step_id="playback_mode",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_PLAYBACK_MODE, default=PLAYBACK_ANDROID_VLC
+                    ): vol.In(
+                        {
+                            PLAYBACK_ANDROID_VLC: "Android Phone (via VLC)",
+                            PLAYBACK_MEDIA_PLAYER: "Smart Speaker / Media Player",
+                        }
+                    ),
+                }
+            ),
+        )
+
+    async def async_step_media_player(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Step 2b: Media player selection for smart speakers."""
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_prayer_source()
+
+        return self.async_show_form(
+            step_id="media_player",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_MEDIA_PLAYER): selector.EntitySelector(
+                        selector.EntitySelectorConfig(domain="media_player")
+                    ),
+                }
+            ),
+        )
+
+    async def async_step_android_vlc(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Step 2c: Android VLC settings (notify service + external URL)."""
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_prayer_source()
+
+        return self.async_show_form(
+            step_id="android_vlc",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_EXTERNAL_URL): str,
+                    vol.Required(CONF_NOTIFY_SERVICE): str,
+                }
+            ),
         )
 
     async def async_step_prayer_source(
@@ -116,7 +185,7 @@ class AzanConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_schedule(
         self, user_input: dict | None = None
     ) -> ConfigFlowResult:
-        """Step 3: Schedule and notification settings."""
+        """Step 4: Schedule settings (offset and prayer toggles)."""
         if user_input is not None:
             self._data.update(user_input)
             await self.async_set_unique_id(DOMAIN)
@@ -130,8 +199,6 @@ class AzanConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="schedule",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_EXTERNAL_URL): str,
-                    vol.Required(CONF_NOTIFY_SERVICE): str,
                     vol.Required(
                         CONF_OFFSET_MINUTES, default=DEFAULT_OFFSET_MINUTES
                     ): vol.All(int, vol.Range(min=0, max=30)),
@@ -166,7 +233,7 @@ class AzanOptionsFlow(OptionsFlow):
         """First step of options: audio settings."""
         if user_input is not None:
             self._data.update(user_input)
-            return await self.async_step_prayer_source()
+            return await self.async_step_playback_mode()
 
         current = {**self._config_entry.data, **self._config_entry.options}
 
@@ -186,10 +253,89 @@ class AzanOptionsFlow(OptionsFlow):
             ),
         )
 
+    async def async_step_playback_mode(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Options step: Playback mode selection."""
+        if user_input is not None:
+            self._data.update(user_input)
+            if user_input[CONF_PLAYBACK_MODE] == PLAYBACK_MEDIA_PLAYER:
+                return await self.async_step_media_player()
+            return await self.async_step_android_vlc()
+
+        current = {**self._config_entry.data, **self._config_entry.options}
+
+        return self.async_show_form(
+            step_id="playback_mode",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_PLAYBACK_MODE,
+                        default=current.get(CONF_PLAYBACK_MODE, PLAYBACK_ANDROID_VLC),
+                    ): vol.In(
+                        {
+                            PLAYBACK_ANDROID_VLC: "Android Phone (via VLC)",
+                            PLAYBACK_MEDIA_PLAYER: "Smart Speaker / Media Player",
+                        }
+                    ),
+                }
+            ),
+        )
+
+    async def async_step_media_player(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Options step: Media player selection for smart speakers."""
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_prayer_source()
+
+        current = {**self._config_entry.data, **self._config_entry.options}
+
+        return self.async_show_form(
+            step_id="media_player",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_MEDIA_PLAYER,
+                        default=current.get(CONF_MEDIA_PLAYER, ""),
+                    ): selector.EntitySelector(
+                        selector.EntitySelectorConfig(domain="media_player")
+                    ),
+                }
+            ),
+        )
+
+    async def async_step_android_vlc(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Options step: Android VLC settings."""
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_prayer_source()
+
+        current = {**self._config_entry.data, **self._config_entry.options}
+
+        return self.async_show_form(
+            step_id="android_vlc",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_EXTERNAL_URL,
+                        default=current.get(CONF_EXTERNAL_URL, ""),
+                    ): str,
+                    vol.Required(
+                        CONF_NOTIFY_SERVICE,
+                        default=current.get(CONF_NOTIFY_SERVICE, ""),
+                    ): str,
+                }
+            ),
+        )
+
     async def async_step_prayer_source(
         self, user_input: dict | None = None
     ) -> ConfigFlowResult:
-        """Options step 2: Prayer source."""
+        """Options step: Prayer source."""
         if user_input is not None:
             self._data.update(user_input)
             if user_input[CONF_PRAYER_SOURCE] == SOURCE_ALADHAN:
@@ -218,7 +364,7 @@ class AzanOptionsFlow(OptionsFlow):
     async def async_step_location(
         self, user_input: dict | None = None
     ) -> ConfigFlowResult:
-        """Options step 2b: Location for AlAdhan."""
+        """Options step: Location for AlAdhan."""
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_schedule()
@@ -247,7 +393,7 @@ class AzanOptionsFlow(OptionsFlow):
     async def async_step_schedule(
         self, user_input: dict | None = None
     ) -> ConfigFlowResult:
-        """Options step 3: Schedule settings."""
+        """Options step: Schedule settings."""
         if user_input is not None:
             self._data.update(user_input)
             return self.async_create_entry(title="", data=self._data)
@@ -258,14 +404,6 @@ class AzanOptionsFlow(OptionsFlow):
             step_id="schedule",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_EXTERNAL_URL,
-                        default=current.get(CONF_EXTERNAL_URL, ""),
-                    ): str,
-                    vol.Required(
-                        CONF_NOTIFY_SERVICE,
-                        default=current.get(CONF_NOTIFY_SERVICE, ""),
-                    ): str,
                     vol.Required(
                         CONF_OFFSET_MINUTES,
                         default=current.get(
