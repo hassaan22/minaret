@@ -35,7 +35,7 @@
           "notify_service": "Notify Service Name"
         },
         "data_description": {
-          "external_url": "The external URL your phone can reach HA at (e.g., https://your-ha.duckdns.org)",
+          "external_url": "The external URL your phone can reach Home Assistant at (e.g., your-ha.duckdns.org)",
           "notify_service": "Home Assistant notify service name (e.g., mobile_app_your_phone)"
         }
       },
