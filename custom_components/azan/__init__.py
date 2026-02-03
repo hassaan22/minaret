@@ -190,6 +190,9 @@ def _download_audio(hass: HomeAssistant, url: str, name: str) -> str:
         "overwrites": True,
         "quiet": True,
         "no_warnings": True,
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        },
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -233,7 +236,7 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
         coordinator.data.played_today.add(prayer_name)
 
     config = {**entry.data, **entry.options}
-    playback_mode = config.get(CONF_PLAYBACK_MODE, PLAYBACK_ANDROID_VLC)
+    playback_mode = config.get(CONF_PLAYBACK_MODE, PLAYBACK_MEDIA_PLAYER)
 
     # Pick the right audio file
     audio_file = store.get("audio_file")
