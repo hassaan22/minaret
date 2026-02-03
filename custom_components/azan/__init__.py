@@ -158,7 +158,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _download_audio(hass: HomeAssistant, url: str, name: str) -> str:
-    """Download audio using yt-dlp (runs in executor thread)."""
+    """Download or use local audio file (runs in executor thread).
+
+    If `url` refers to an existing local file (absolute or relative to
+    the Home Assistant config/media/www folders), copy it into
+    `www/azan` as `<name>.mp3`. Otherwise fallback to downloading with
+    yt-dlp as before.
+    """
     audio_dir = Path(hass.config.path("www", "azan"))
     audio_dir.mkdir(parents=True, exist_ok=True)
 
@@ -171,9 +177,40 @@ def _download_audio(hass: HomeAssistant, url: str, name: str) -> str:
         if existing_url == url:
             _LOGGER.debug("Audio already cached: %s", name)
             return str(out_path)
+    _LOGGER.info("Preparing audio: %s -> %s", url, name)
 
-    _LOGGER.info("Downloading audio: %s -> %s", url, name)
+    # Try to resolve `url` as a local file path in several likely places
+    candidates: list[Path] = []
+    try:
+        candidates.append(Path(url))
+    except Exception:
+        pass
+    # Relative to config dir
+    candidates.append(Path(hass.config.path(url)))
+    # Common HA media folders
+    candidates.append(Path(hass.config.path("media", url)))
+    candidates.append(Path(hass.config.path("www", url)))
+    candidates.append(Path(hass.config.path("www", "azan", url)))
 
+    local_source: Path | None = None
+    for c in candidates:
+        if c.exists() and c.is_file():
+            local_source = c
+            break
+
+    if local_source:
+        _LOGGER.info("Using local audio file: %s", local_source)
+        try:
+            shutil.copyfile(str(local_source), str(out_path))
+        except Exception:
+            _LOGGER.exception("Failed to copy local audio file: %s", local_source)
+            raise
+        marker_path.write_text(str(local_source))
+        _LOGGER.info("Audio copied: %s", name)
+        return str(out_path)
+
+    # Fallback: download using yt-dlp
+    _LOGGER.info("Downloading audio with yt-dlp: %s -> %s", url, name)
     import yt_dlp
 
     ydl_opts = {
