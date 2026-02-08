@@ -130,13 +130,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "Azhan (short) by Mishray Alafasi.mp3",
             ]
             fajr_names = [
-                "Fajr Azhan by Mishray Alafasy.mp3",
                 "Fajr Azhan by Mishray Alafasi.mp3",
             ]
 
             integration_media = Path(__file__).parent / "media"
 
-            def _find_and_copy(candidates, dest_name):
+            async def _find_and_copy(candidates, dest_name):
                 for name in candidates:
                     cand_paths = [
                         # Prefer bundled integration media first
@@ -152,16 +151,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         if p and p.exists() and p.is_file():
                             dst = audio_dir / dest_name
                             try:
-                                shutil.copyfile(str(p), str(dst))
+                                # Use executor for blocking file I/O to avoid
+                                # blocking the Home Assistant event loop.
+                                await hass.async_add_executor_job(
+                                    shutil.copyfile, str(p), str(dst)
+                                )
                                 return str(dst)
                             except Exception:
                                 _LOGGER.exception("Failed to copy default audio %s", p)
                                 return None
                 return None
 
-            full_path = _find_and_copy(full_names, "azan_full.mp3")
-            short_path = _find_and_copy(short_names, "azan_short.mp3")
-            fajr_path = _find_and_copy(fajr_names, "fajr_azan.mp3")
+            full_path = await _find_and_copy(full_names, "azan_full.mp3")
+            short_path = await _find_and_copy(short_names, "azan_short.mp3")
+            fajr_path = await _find_and_copy(fajr_names, "fajr_azan.mp3")
 
             if full_path:
                 store["full_audio_file"] = full_path
@@ -379,15 +382,20 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
         if prayer_name == "Fajr":
             audio_file = store.get("fajr_audio_file")
         else:
+            _LOGGER.debug("_play_azan called for prayer_name=%s", prayer_name)
             audio_file = store.get("audio_file")
     elif selection == SOUND_OPTION_FULL:
+                _LOGGER.error("No store found for entry_id=%s", entry.entry_id)
         # For Fajr, prefer the special fajr audio when full is selected.
         if prayer_name == "Fajr":
+            _LOGGER.debug("Coordinator data: %s", coordinator.data)
             audio_file = store.get("fajr_audio_file") or store.get("full_audio_file")
         else:
+                    _LOGGER.debug("Prayer %s already played_today, skipping", prayer_name)
             audio_file = store.get("full_audio_file")
     elif selection == SOUND_OPTION_SHORT:
         audio_file = store.get("short_audio_file")
+            _LOGGER.debug("Playback config: %s", config)
 
     # Fallbacks if chosen file not available
     if not audio_file or not os.path.exists(audio_file):
@@ -402,29 +410,37 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
         _schedule_next_prayer(hass, entry)
         return
 
+            _LOGGER.debug("Selected audio_file for %s: %s", prayer_name, audio_file)
     filename = os.path.basename(audio_file)
+                _LOGGER.warning("Audio file not found or does not exist: %s", audio_file)
 
     # Build media URL
     if playback_mode == PLAYBACK_MEDIA_PLAYER:
         # For media_player, use internal URL is fine
         try:
+                _LOGGER.error("No audio file available for %s after fallback attempts", prayer_name)
             base_url = get_url(hass, allow_internal=True, prefer_external=False)
         except Exception:
             base_url = get_url(hass)
     else:
         # For Android, use configured external URL
+            _LOGGER.debug("Audio filename for playback: %s", filename)
         base_url = config.get(CONF_EXTERNAL_URL, "").rstrip("/")
+            _LOGGER.debug("Media URL for playback: %s", media_url)
         if not base_url:
             try:
+            _LOGGER.debug("Set is_playing=True, currently_playing=%s", prayer_name)
                 base_url = get_url(hass, allow_external=True, prefer_external=True)
             except Exception:
                 base_url = get_url(hass)
 
     media_url = f"{base_url}/local/azan/{filename}"
+                        _LOGGER.error("No media player configured in config: %s", config)
 
     # Mark as playing
     store["is_playing"] = True
     store["currently_playing"] = prayer_name
+                        _LOGGER.debug("Calling media_player.play_media for target=%s, media_url=%s", target, media_url)
 
     # Trigger sensor updates for status change
     if coordinator.data:
@@ -438,6 +454,7 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
             media_player_config = config.get(CONF_MEDIA_PLAYER)
             if not media_player_config:
                 _LOGGER.warning("No media player configured")
+                        _LOGGER.error("No notify service configured in config: %s", config)
                 return
 
             # `media_player_config` may be a single entity_id or a list
@@ -449,6 +466,7 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
                     "play_media",
                     {
                         "entity_id": target,
+                    _LOGGER.debug("Sent command_screen_on to notify service: %s", notify_service)
                         "media_content_id": media_url,
                         "media_content_type": "music",
                     },
@@ -465,7 +483,9 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
                 "notify",
                 notify_service,
                 {
+                    _LOGGER.debug("Sent command_activity to notify service: %s, media_url=%s", notify_service, media_url)
                     "message": "command_screen_on",
+                _LOGGER.exception("Exception during azan playback for %s", prayer_name)
                     "data": {"ttl": 0, "priority": "high"},
                 },
             )
@@ -476,11 +496,13 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
                 notify_service,
                 {
                     "message": "command_activity",
+                _LOGGER.debug("Marking prayer %s as played_today", prayer_name)
                     "data": {
                         "intent_action": "android.intent.action.VIEW",
                         "intent_uri": media_url,
                         "intent_type": "audio/mpeg",
                         "intent_package_name": "org.videolan.vlc",
+                _LOGGER.debug("Resetting is_playing/playing state for %s", prayer_name)
                         "ttl": 0,
                         "priority": "high",
                     },
