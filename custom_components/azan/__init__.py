@@ -31,6 +31,13 @@ from .const import (
     CONF_NOTIFY_SERVICE,
     CONF_OFFSET_MINUTES,
     CONF_PLAYBACK_MODE,
+    CONF_VOLUME_LEVEL,
+    CONF_VOLUME_FAJR,
+    CONF_VOLUME_SUNRISE,
+    CONF_VOLUME_DHUHR,
+    CONF_VOLUME_ASR,
+    CONF_VOLUME_MAGHRIB,
+    CONF_VOLUME_ISHA,
     DEFAULT_OFFSET_MINUTES,
     DOMAIN,
     PLAYBACK_ANDROID_VLC,
@@ -358,6 +365,17 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
 
     config = {**entry.data, **entry.options}
     playback_mode = config.get(CONF_PLAYBACK_MODE, PLAYBACK_MEDIA_PLAYER)
+    # Per-prayer volume config keys
+    volume_key_map = {
+        "Fajr": CONF_VOLUME_FAJR,
+        "Sunrise": CONF_VOLUME_SUNRISE,
+        "Dhuhr": CONF_VOLUME_DHUHR,
+        "Asr": CONF_VOLUME_ASR,
+        "Maghrib": CONF_VOLUME_MAGHRIB,
+        "Isha": CONF_VOLUME_ISHA,
+    }
+    # Default to 0.4 if not set
+    volume_level = config.get(volume_key_map.get(prayer_name), 0.4)
 
     # Pick the right audio file
     # Determine per-prayer sound selection
@@ -449,6 +467,19 @@ async def _play_azan(hass: HomeAssistant, entry: ConfigEntry, prayer_name: str) 
 
             # `media_player_config` may be a single entity_id or a list
             targets = media_player_config if isinstance(media_player_config, (list, tuple)) else [media_player_config]
+
+            # Set volume for this prayer
+            if volume_level is not None:
+                for target in targets:
+                    _LOGGER.debug("Setting volume for %s to %s (prayer: %s)", target, volume_level, prayer_name)
+                    await hass.services.async_call(
+                        "media_player",
+                        "volume_set",
+                        {
+                            "entity_id": target,
+                            "volume_level": float(volume_level),
+                        },
+                    )
 
             for target in targets:
                 _LOGGER.debug("Calling media_player.play_media for target=%s, media_url=%s", target, media_url)
