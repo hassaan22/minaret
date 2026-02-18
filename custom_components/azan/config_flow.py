@@ -35,6 +35,12 @@ from .const import (
     CONF_PRAYER_MAGHRIB,
     CONF_PRAYER_SOURCE,
     CONF_PRAYER_SUNRISE,
+    CONF_VOLUME_FAJR,
+    CONF_VOLUME_SUNRISE,
+    CONF_VOLUME_DHUHR,
+    CONF_VOLUME_ASR,
+    CONF_VOLUME_MAGHRIB,
+    CONF_VOLUME_ISHA,
     DEFAULT_METHOD,
     DEFAULT_OFFSET_MINUTES,
     DEFAULT_SOURCE,
@@ -77,21 +83,27 @@ class AzanConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_SOUND_FAJR, default=SOUND_OPTION_FULL): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Fajr URL)"}
                     ),
+                    vol.Required(CONF_VOLUME_FAJR, default=DEFAULT_VOLUME_LEVEL): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(CONF_SOUND_SUNRISE, default=SOUND_OPTION_FULL): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(CONF_VOLUME_SUNRISE, default=DEFAULT_VOLUME_LEVEL): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(CONF_SOUND_DHUHR, default=SOUND_OPTION_FULL): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(CONF_VOLUME_DHUHR, default=DEFAULT_VOLUME_LEVEL): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(CONF_SOUND_ASR, default=SOUND_OPTION_FULL): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(CONF_VOLUME_ASR, default=DEFAULT_VOLUME_LEVEL): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(CONF_SOUND_MAGHRIB, default=SOUND_OPTION_FULL): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(CONF_VOLUME_MAGHRIB, default=DEFAULT_VOLUME_LEVEL): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(CONF_SOUND_ISHA, default=SOUND_OPTION_FULL): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(CONF_VOLUME_ISHA, default=DEFAULT_VOLUME_LEVEL): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Optional(CONF_AZAN_URL, default=""): str,
                     vol.Optional(CONF_FAJR_URL, default=""): str,
                 }
@@ -290,30 +302,48 @@ class AzanOptionsFlow(OptionsFlow):
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (Use Fajr URL)"}
                     ),
                     vol.Required(
+                        CONF_VOLUME_FAJR, default=current.get(CONF_VOLUME_FAJR, DEFAULT_VOLUME_LEVEL)
+                    ): vol.All(float, vol.Range(min=0.0, max=1.0)),
+                    vol.Required(
                         CONF_SOUND_SUNRISE, default=current.get(CONF_SOUND_SUNRISE, SOUND_OPTION_FULL)
                     ): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(
+                        CONF_VOLUME_SUNRISE, default=current.get(CONF_VOLUME_SUNRISE, DEFAULT_VOLUME_LEVEL)
+                    ): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(
                         CONF_SOUND_DHUHR, default=current.get(CONF_SOUND_DHUHR, SOUND_OPTION_FULL)
                     ): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
                     vol.Required(
+                        CONF_VOLUME_DHUHR, default=current.get(CONF_VOLUME_DHUHR, DEFAULT_VOLUME_LEVEL)
+                    ): vol.All(float, vol.Range(min=0.0, max=1.0)),
+                    vol.Required(
                         CONF_SOUND_ASR, default=current.get(CONF_SOUND_ASR, SOUND_OPTION_FULL)
                     ): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(
+                        CONF_VOLUME_ASR, default=current.get(CONF_VOLUME_ASR, DEFAULT_VOLUME_LEVEL)
+                    ): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Required(
                         CONF_SOUND_MAGHRIB, default=current.get(CONF_SOUND_MAGHRIB, SOUND_OPTION_FULL)
                     ): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
                     vol.Required(
+                        CONF_VOLUME_MAGHRIB, default=current.get(CONF_VOLUME_MAGHRIB, DEFAULT_VOLUME_LEVEL)
+                    ): vol.All(float, vol.Range(min=0.0, max=1.0)),
+                    vol.Required(
                         CONF_SOUND_ISHA, default=current.get(CONF_SOUND_ISHA, SOUND_OPTION_FULL)
                     ): vol.In(
                         {SOUND_OPTION_FULL: "Full", SOUND_OPTION_SHORT: "Short", SOUND_OPTION_CUSTOM: "Custom (use Azan URL)"}
                     ),
+                    vol.Required(
+                        CONF_VOLUME_ISHA, default=current.get(CONF_VOLUME_ISHA, DEFAULT_VOLUME_LEVEL)
+                    ): vol.All(float, vol.Range(min=0.0, max=1.0)),
                     vol.Optional(
                         CONF_AZAN_URL,
                         default=current.get(CONF_AZAN_URL, ""),

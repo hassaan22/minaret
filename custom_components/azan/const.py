@@ -1,3 +1,5 @@
+# Default per-prayer volume (0.4 = 40%)
+DEFAULT_VOLUME_LEVEL = 0.4
 """Constants for the Minaret integration."""
 
 DOMAIN = "azan"
@@ -23,6 +25,14 @@ CONF_SOUND_DHUHR = "sound_dhuhr"
 CONF_SOUND_ASR = "sound_asr"
 CONF_SOUND_MAGHRIB = "sound_maghrib"
 CONF_SOUND_ISHA = "sound_isha"
+
+# Per-prayer volume config keys
+CONF_VOLUME_FAJR = "volume_fajr"
+CONF_VOLUME_SUNRISE = "volume_sunrise"
+CONF_VOLUME_DHUHR = "volume_dhuhr"
+CONF_VOLUME_ASR = "volume_asr"
+CONF_VOLUME_MAGHRIB = "volume_maghrib"
+CONF_VOLUME_ISHA = "volume_isha"
 
 # Sound options
 SOUND_OPTION_FULL = "full"
